@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card" style="margin-bottom: 24px;">
+  <div class="card-header" style="margin-bottom: 0;">
+    <div>
+      <h2 class="card-title">Tizim Diagnostika Hisobotlari</h2>
+      <p class="card-subtitle">
+        Lokal kompyuter ko'rsatkichlari, tarmoq tahlili va aniqlangan ogohlantirishlar to'g'risida to'liq rasmiy hisobot.
+      </p>
+    </div>
+    <button class="btn btn-primary" onclick="generateNewReport()" id="genReportBtn">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+        <polyline points="14 2 14 8 20 8"></polyline>
+        <line x1="12" y1="18" x2="12" y2="12"></line>
+        <line x1="9" y1="15" x2="15" y2="15"></line>
+      </svg>
+      Yangi hisobot yaratish
+    </button>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title">Yaratilgan Hisobotlar ({{ reports | length }})</h3>
+  </div>
+
+  {% if reports | length == 0 %}
+  <div style="text-align: center; padding: 40px 20px;">
+    <div style="font-size: 2.5rem; margin-bottom: 12px;">📄</div>
+    <h3 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 6px;">Hozircha hech qanday hisobot yaratilmagan</h3>
+    <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 16px;">
+      Tizim holatini hujjatlashtirish va JSON shaklida yuklab olish uchun "Yangi hisobot yaratish" tugmasini bosing.
+    </p>
+    <button class="btn btn-secondary" onclick="generateNewReport()">
+      Hozir yaratish
+    </button>
+  </div>
+  {% else %}
+  <div class="table-container">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Hisobot ID</th>
+          <th>Sana va Vaqt</th>
+          <th>Kompyuter Nomi</th>
+          <th>Umumiy Holat</th>
+          <th>Faol Ogohlantirishlar</th>
+          <th>Amallar</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in reports %}
+        <tr>
+          <td><code>#{{ r.id }}</code></td>
+          <td>{{ r.display_time }}</td>
+          <td><strong>{{ r.hostname }}</strong></td>
+          <td>
+            <span class="badge {{ r.summary.color_class }}">
+              {{ r.summary.label }}
+            </span>
+          </td>
+          <td>
+            {% if r.active_alerts_count > 0 %}
+            <span class="badge badge-warning">{{ r.active_alerts_count }} ta</span>
+            {% else %}
+            <span class="badge badge-success">Mavjud emas</span>
+            {% endif %}
+          </td>
+          <td style="display: flex; gap: 8px;">
+            <a href="/reports/{{ r.id }}/view" class="btn btn-sm btn-secondary" title="Chop etish yoki ko'rish">
+              Ko'rish / Chop etish
+            </a>
+            <a href="/api/reports/{{ r.id }}/download" class="btn btn-sm btn-primary" download title="JSON yuklab olish">
+              JSON Yuklab olish
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function generateNewReport() {
+  const btn = document.getElementById("genReportBtn");
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = "Hisobot shakllantirilmoqda...";
+  }
+  try {
+    const res = await fetch("/api/reports", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ note: "Foydalanuvchi tomonidan panel orqali yaratildi" })
+    });
+    if (!res.ok) throw new Error("Hisobot yaratishda xatolik yuz berdi");
+    const data = await res.json();
+    showToast("Yangi hisobot muvaffaqiyatli yaratildi!", "success");
+    setTimeout(() => window.location.reload(), 800);
+  } catch (err) {
+    showToast(err.message, "critical");
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = "Yangi hisobot yaratish";
+    }
+  }
+}
+</script>
+{% endblock %}

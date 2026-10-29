@@ -1,0 +1,317 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Yuqori filtr va boshqaruv paneli -->
+<div class="card" style="margin-bottom: 24px;">
+  <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
+    <div>
+      <h2 style="font-size: 1.25rem; font-weight: 700;">Masofaviy Kompyuterlar Monitoringi</h2>
+      <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 2px;">
+        Kompaniyalarga ulangan haqiqiy kompyuterlarning real vaqtdagi jonli telemetriyasi.
+      </p>
+    </div>
+
+    <!-- Tashkilot tanlash va Yangi kompyuter qo'shish tugmasi -->
+    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+      <label style="font-size: 0.85rem; color: var(--text-secondary);">Kompaniya:</label>
+      <select onchange="location.href='/devices?org_id=' + this.value" 
+              style="padding: 8px 14px; border-radius: 8px; background: var(--bg-card-subtle); border: 1px solid var(--border-color); color: var(--text-primary); font-weight: 500;">
+        {% for org in organizations %}
+        <option value="{{ org.id }}" {% if selected_org and selected_org.id == org.id %}selected{% endif %}>
+          {{ org.name }}
+        </option>
+        {% endfor %}
+      </select>
+
+      <button class="btn btn-primary" onclick="openAddDeviceModal()" style="display: flex; align-items: center; gap: 6px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+        + Yangi Kompyuter Qo'shish
+      </button>
+
+      <a href="/admin/organizations" class="btn btn-secondary btn-sm" title="Kompaniyalarni sozlash">
+        API Kalitlar &rarr;
+      </a>
+    </div>
+  </div>
+
+  {% if selected_org %}
+  <div style="margin-top: 14px; padding: 10px 14px; background: var(--bg-card-subtle); border-radius: 8px; border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; font-size: 0.85rem; flex-wrap: wrap; gap: 10px;">
+    <div>
+      Tanlangan: <strong>{{ selected_org.name }}</strong> • API Kalit: <code style="color: var(--accent-secondary);">{{ selected_org.api_key }}</code>
+    </div>
+    <div style="display: flex; gap: 10px;">
+      <a href="/api/v1/agent/installer-script?org_id={{ selected_org.id }}" class="btn btn-sm btn-secondary" download>
+        💾 Ushbu Kompaniya Uchun O'rnatgichni Yuklab Olish (.bat)
+      </a>
+      <span class="badge badge-info">{{ remote_devices | length }} ta qurilma ulangan</span>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Ulangan Haqiqiy Kompyuterlar Jadvali -->
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title">Ulangan Kompyuterlar Ro'yxati</h3>
+    <button class="btn btn-sm btn-secondary" onclick="window.location.reload()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path>
+      </svg>
+      Yangilash
+    </button>
+  </div>
+
+  {% if remote_devices | length == 0 %}
+  <div style="text-align: center; padding: 40px 20px;">
+    <div style="font-size: 2.5rem; margin-bottom: 12px;">🖥️</div>
+    <h3 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 6px;">Hozircha ushbu kompaniyaga kompyuter ulanmagan</h3>
+    <p style="color: var(--text-secondary); max-width: 500px; margin: 0 auto 18px auto; font-size: 0.9rem;">
+      Kompyuterni ulash uchun yuqoridagi <strong>"+ Yangi Kompyuter Qo'shish"</strong> tugmasini bosing yoki tayyor <code>.bat</code> o'rnatgichni yuklab oling.
+    </p>
+    <button class="btn btn-primary" onclick="openAddDeviceModal()">
+      + Yangi Kompyuter Qo'shish
+    </button>
+  </div>
+  {% else %}
+  <div class="table-container">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Kompyuter Nomi / ID</th>
+          <th>Holat</th>
+          <th>IP Manzil</th>
+          <th>Tizim (OS)</th>
+          <th>CPU Yuklanishi</th>
+          <th>RAM Ishlatilishi</th>
+          <th>Disk Holati</th>
+          <th>So'nggi Signal</th>
+          <th>Amallar</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for dev in remote_devices %}
+        <tr>
+          <td>
+            <a href="/devices/{{ dev.id }}" style="font-weight: 600; color: var(--accent-primary);">
+              {{ dev.hostname }}
+            </a>
+            <div style="font-size: 0.75rem; color: var(--text-secondary); font-family: monospace;">
+              {{ dev.id }}
+            </div>
+          </td>
+          <td>
+            <span class="badge {{ dev.status_class }}">
+              <span class="status-dot" style="background-color: {% if dev.is_online %}var(--status-success){% else %}var(--status-critical){% endif %};"></span>
+              {{ dev.status_text }}
+            </span>
+          </td>
+          <td>
+            <span style="font-family: monospace; font-size: 0.85rem;">{{ dev.ip_address }}</span>
+          </td>
+          <td>{{ dev.platform }}</td>
+          <td>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <strong>{{ dev.cpu_percent }}%</strong>
+              <div style="width: 50px; height: 6px; background: var(--bg-card-subtle); border-radius: 3px; overflow: hidden;">
+                <div style="width: {{ dev.cpu_percent }}%; height: 100%; background: {% if dev.cpu_percent >= 90 %}var(--status-critical){% elif dev.cpu_percent >= 70 %}var(--status-warning){% else %}var(--status-success){% endif %};"></div>
+              </div>
+            </div>
+          </td>
+          <td>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <strong>{{ dev.memory.used_percent | default(0) }}%</strong>
+              <div style="width: 50px; height: 6px; background: var(--bg-card-subtle); border-radius: 3px; overflow: hidden;">
+                <div style="width: {{ dev.memory.used_percent | default(0) }}%; height: 100%; background: var(--accent-secondary);"></div>
+              </div>
+            </div>
+          </td>
+          <td>
+            <span>{{ dev.disk.used_percent | default(0) }}% band</span>
+          </td>
+          <td style="font-size: 0.8rem; color: var(--text-secondary); white-space: nowrap;">
+            {{ dev.last_seen_formatted }}
+          </td>
+          <td>
+            <div style="display: flex; gap: 6px;">
+              <a href="/devices/{{ dev.id }}" class="btn btn-sm btn-secondary">
+                Tahlil &rarr;
+              </a>
+              <button class="btn btn-sm btn-danger" onclick="deleteDevice('{{ dev.id }}')" title="O'chirish">
+                ✕
+              </button>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+</div>
+
+<!-- ==========================================================================
+     MODAL: Yangi Kompyuter Qo'shish (2 xil usul bilan)
+     ========================================================================== -->
+<div id="addDeviceModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.65); z-index: 1000; align-items: center; justify-content: center; padding: 20px;">
+  <div class="card" style="width: 100%; max-width: 540px; max-height: 90vh; overflow-y: auto;">
+    <div class="card-header">
+      <h3 class="card-title">🖥️ Yangi Kompyuter Qo'shish</h3>
+      <button class="btn btn-sm btn-secondary" onclick="closeAddDeviceModal()">✕</button>
+    </div>
+
+    <!-- Usul tanlash tablari -->
+    <div style="display: flex; gap: 10px; margin-bottom: 18px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">
+      <button type="button" class="btn btn-sm btn-primary" id="tabAutoBtn" onclick="switchDeviceTab('auto')">
+        ⚡ 1-Klik O'rnatgich (Tavsiya)
+      </button>
+      <button type="button" class="btn btn-sm btn-secondary" id="tabManualBtn" onclick="switchDeviceTab('manual')">
+        ✍️ Serverdan Qo'lda Qo'shish
+      </button>
+    </div>
+
+    <!-- 1-USUL: 1-Klik O'rnatgich -->
+    <div id="panelAuto">
+      <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 14px;">
+        Tanlangan kompaniya: <strong>{{ selected_org.name if selected_org else 'Tashkilot' }}</strong>. 
+        Ushbu fayl ichida API kalit va Server manzili oldindan sozlangan bo'ladi.
+      </p>
+
+      <div style="background: var(--bg-card-subtle); padding: 16px; border-radius: 10px; border: 1px solid var(--border-color); margin-bottom: 16px;">
+        <div style="font-weight: 600; margin-bottom: 6px;">Qadamlar:</div>
+        <ol style="padding-left: 20px; font-size: 0.85rem; color: var(--text-secondary); line-height: 1.6;">
+          <li>Quyidagi tugma orqali tayyor <code>.bat</code> faylini yuklab oling.</li>
+          <li>Faylni mijoz kompyuteriga tashlang va ikki marta bosing.</li>
+          <li>Kompyuter avtomatik ravishda ushbu ro'yxatda paydo bo'ladi!</li>
+        </ol>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <a href="/api/v1/agent/installer-script?org_id={{ selected_org.id if selected_org else 'org_demo' }}" 
+           class="btn btn-primary" download style="padding: 12px; font-size: 0.95rem;">
+          💾 Tayyor O'rnatgichni Yuklab Olish (install.bat)
+        </a>
+      </div>
+    </div>
+
+    <!-- 2-USUL: Qo'lda Kiritish -->
+    <div id="panelManual" style="display: none;">
+      <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 14px;">
+        Kompyuter ma'lumotlarini server bazasiga to'g'ridan-to'g'ri kiritish:
+      </p>
+
+      <form onsubmit="submitManualDevice(event)">
+        <input type="hidden" id="manualOrgId" value="{{ selected_org.id if selected_org else 'org_demo' }}">
+
+        <div style="margin-bottom: 12px;">
+          <label style="display: block; font-size: 0.85rem; margin-bottom: 6px;">Kompyuter Nomi:</label>
+          <input type="text" id="manualHostname" required placeholder="Masalan: 12-Stol Talaba yoki Buxgalteriya-PC"
+                 style="width: 100%; padding: 10px; border-radius: 8px; background: var(--bg-card-subtle); border: 1px solid var(--border-color); color: var(--text-primary);">
+        </div>
+
+        <div style="margin-bottom: 12px;">
+          <label style="display: block; font-size: 0.85rem; margin-bottom: 6px;">IP Manzil (Lokal yoki Tarmoq):</label>
+          <input type="text" id="manualIp" required placeholder="192.168.1.45"
+                 style="width: 100%; padding: 10px; border-radius: 8px; background: var(--bg-card-subtle); border: 1px solid var(--border-color); color: var(--text-primary);">
+        </div>
+
+        <div style="margin-bottom: 16px;">
+          <label style="display: block; font-size: 0.85rem; margin-bottom: 6px;">Operatsion Tizim (OS):</label>
+          <select id="manualPlatform" style="width: 100%; padding: 10px; border-radius: 8px; background: var(--bg-card-subtle); border: 1px solid var(--border-color); color: var(--text-primary);">
+            <option value="Windows 11 Pro">Windows 11 Pro</option>
+            <option value="Windows 10 Pro">Windows 10 Pro</option>
+            <option value="Ubuntu 22.04 LTS">Ubuntu 22.04 LTS</option>
+            <option value="Windows Server">Windows Server</option>
+          </select>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 10px;">
+          <button type="button" class="btn btn-secondary" onclick="closeAddDeviceModal()">Bekor qilish</button>
+          <button type="submit" class="btn btn-primary" id="saveManualDevBtn">Kompyuterni Saqlash</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function openAddDeviceModal() {
+  document.getElementById("addDeviceModal").style.display = "flex";
+}
+function closeAddDeviceModal() {
+  document.getElementById("addDeviceModal").style.display = "none";
+}
+
+function switchDeviceTab(tab) {
+  const pAuto = document.getElementById("panelAuto");
+  const pManual = document.getElementById("panelManual");
+  const bAuto = document.getElementById("tabAutoBtn");
+  const bManual = document.getElementById("tabManualBtn");
+
+  if (tab === 'auto') {
+    pAuto.style.display = "block";
+    pManual.style.display = "none";
+    bAuto.className = "btn btn-sm btn-primary";
+    bManual.className = "btn btn-sm btn-secondary";
+  } else {
+    pAuto.style.display = "none";
+    pManual.style.display = "block";
+    bAuto.className = "btn btn-sm btn-secondary";
+    bManual.className = "btn btn-sm btn-primary";
+  }
+}
+
+async function submitManualDevice(e) {
+  e.preventDefault();
+  const btn = document.getElementById("saveManualDevBtn");
+  btn.disabled = true;
+  btn.textContent = "Saqlanmoqda...";
+
+  const orgId = document.getElementById("manualOrgId").value;
+  const hostname = document.getElementById("manualHostname").value.trim();
+  const ip = document.getElementById("manualIp").value.trim();
+  const platform = document.getElementById("manualPlatform").value;
+
+  try {
+    const res = await fetch("/api/v1/devices/manual", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        org_id: orgId,
+        hostname: hostname,
+        ip_address: ip,
+        platform: platform
+      })
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || "Kompyuterni saqlashda xatolik yuz berdi");
+    }
+
+    showToast("Kompyuter muvaffaqiyatli qo'shildi!", "success");
+    setTimeout(() => window.location.reload(), 600);
+  } catch (err) {
+    showToast(err.message, "critical");
+    btn.disabled = false;
+    btn.textContent = "Kompyuterni Saqlash";
+  }
+}
+
+async function deleteDevice(devId) {
+  if (!confirm("Ushbu kompyuterni ro'yxatdan o'chirmoqchimisiz?")) return;
+  try {
+    const res = await fetch(`/api/v1/devices/${devId}`, { method: "DELETE" });
+    if (!res.ok) throw new Error("O'chirishda xatolik");
+    showToast("Kompyuter o'chirildi", "success");
+    setTimeout(() => window.location.reload(), 500);
+  } catch (err) {
+    showToast(err.message, "critical");
+  }
+}
+</script>
+{% endblock %}

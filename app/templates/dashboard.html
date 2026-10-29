@@ -1,0 +1,226 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Xatolik banneri (agar backend bilan aloqa uzilsa) -->
+<div id="dashboardErrorBanner" class="error-banner">
+  <div style="display: flex; align-items: center; gap: 10px;">
+    <span>⚠️</span>
+    <span id="dashboardErrorText">Telemetriya ma'lumotlarini yuklab bo'lmadi.</span>
+  </div>
+  <button class="btn btn-sm btn-secondary" onclick="fetchMetrics()">Qayta urinish</button>
+</div>
+
+<!-- Yuqori Tezkor Panel va Qisqa Xulosa -->
+<div class="card" style="margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
+  <div>
+    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 4px;">
+      <h2 style="font-size: 1.2rem; font-weight: 600;">Lokal Qurilma: <span id="valHostname" style="color: var(--accent-primary);">Yuklanmoqda...</span></h2>
+      <span id="systemStatusBadge" class="badge badge-success">Tekshirilmoqda</span>
+    </div>
+    <div style="font-size: 0.85rem; color: var(--text-secondary);">
+      <span id="valPlatform">--</span> • Ish vaqti (Uptime): <strong id="valUptime" style="color: var(--text-primary);">--</strong> • Manba: <strong>Lokal psutil</strong>
+    </div>
+  </div>
+
+  <div style="display: flex; align-items: center; gap: 10px;">
+    <button id="manualRefreshBtn" class="btn btn-secondary" title="Hozir yangilash">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path>
+      </svg>
+      Hozir yangilash
+    </button>
+    <a href="/diagnostics" class="btn btn-primary">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polygon points="5 3 19 12 5 21 5 3"></polygon>
+      </svg>
+      Tezkor tekshiruv
+    </a>
+  </div>
+</div>
+
+<!-- 4 Ta Asosiy Metrika Kartasi -->
+<div class="grid-4">
+  <!-- 1. CPU -->
+  <div class="card metric-card">
+    <div class="metric-top">
+      <span class="metric-label">CPU Yuklanishi</span>
+      <div class="metric-icon-wrap" style="color: var(--accent-primary);">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="4" y="4" width="16" height="16" rx="2"></rect>
+          <rect x="9" y="9" width="6" height="6"></rect>
+          <line x1="9" y1="1" x2="9" y2="4"></line>
+          <line x1="15" y1="1" x2="15" y2="4"></line>
+          <line x1="9" y1="20" x2="9" y2="23"></line>
+          <line x1="15" y1="20" x2="15" y2="23"></line>
+          <line x1="20" y1="9" x2="23" y2="9"></line>
+          <line x1="20" y1="14" x2="23" y2="14"></line>
+          <line x1="1" y1="9" x2="4" y2="9"></line>
+          <line x1="1" y1="14" x2="4" y2="14"></line>
+        </svg>
+      </div>
+    </div>
+    <div>
+      <div class="metric-value-wrap">
+        <span id="valCpu" class="metric-value">--</span>
+        <span class="metric-unit">%</span>
+      </div>
+      <div class="progress-bar-bg">
+        <div id="barCpu" class="progress-bar-fill" style="width: 0%;"></div>
+      </div>
+    </div>
+    <div class="metric-sub">
+      <span id="subCpu">Yadrolar tahlili...</span>
+      <span>Me'yor: &lt;70%</span>
+    </div>
+  </div>
+
+  <!-- 2. RAM -->
+  <div class="card metric-card">
+    <div class="metric-top">
+      <span class="metric-label">Operativ Xotira (RAM)</span>
+      <div class="metric-icon-wrap" style="color: var(--accent-secondary);">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M6 19v-3M10 19v-3M14 19v-3M18 19v-3M6 5v3M10 5v3M14 5v3M18 5v3"></path>
+          <rect x="2" y="8" width="20" height="8" rx="2"></rect>
+        </svg>
+      </div>
+    </div>
+    <div>
+      <div class="metric-value-wrap">
+        <span id="valRam" class="metric-value">--</span>
+        <span class="metric-unit">%</span>
+      </div>
+      <div class="progress-bar-bg">
+        <div id="barRam" class="progress-bar-fill" style="width: 0%;"></div>
+      </div>
+    </div>
+    <div class="metric-sub">
+      <span id="subRam">Hisoblanmoqda...</span>
+      <span>Haddan tashqari: &gt;90%</span>
+    </div>
+  </div>
+
+  <!-- 3. Disk -->
+  <div class="card metric-card">
+    <div class="metric-top">
+      <span class="metric-label">Asosiy Disk Ishlatilishi</span>
+      <div class="metric-icon-wrap" style="color: var(--status-warning);">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="22" y1="12" x2="2" y2="12"></line>
+          <path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"></path>
+          <line x1="6" y1="16" x2="6.01" y2="16"></line>
+          <line x1="10" y1="16" x2="10.01" y2="16"></line>
+        </svg>
+      </div>
+    </div>
+    <div>
+      <div class="metric-value-wrap">
+        <span id="valDisk" class="metric-value">--</span>
+        <span class="metric-unit">%</span>
+      </div>
+      <div class="progress-bar-bg">
+        <div id="barDisk" class="progress-bar-fill" style="width: 0%;"></div>
+      </div>
+    </div>
+    <div class="metric-sub">
+      <span id="subDisk">Bo'sh joy tekshiruvi...</span>
+      <span>Kritik: &lt;10% bo'sh</span>
+    </div>
+  </div>
+
+  <!-- 4. Tarmoq Holati -->
+  <div class="card metric-card">
+    <div class="metric-top">
+      <span class="metric-label">Tarmoq va DNS</span>
+      <div class="metric-icon-wrap" style="color: var(--status-success);">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="2" y1="12" x2="22" y2="12"></line>
+          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+        </svg>
+      </div>
+    </div>
+    <div>
+      <div class="metric-value-wrap">
+        <span class="metric-value" style="font-size: 1.5rem; color: var(--status-success);">Barqaror</span>
+      </div>
+      <div style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 6px;">
+        Diagnostika manzili: <strong style="color: var(--text-primary);">{{ settings.diagnostic_target }}</strong>
+      </div>
+    </div>
+    <div class="metric-sub">
+      <span>DNS & Ping faol</span>
+      <a href="/diagnostics" style="color: var(--accent-primary); font-weight: 500;">Sinash &rarr;</a>
+    </div>
+  </div>
+</div>
+
+<!-- Grafik va Tizim Xulosasi Grid -->
+<div class="grid-2">
+  <!-- Haqiqiy Ko'rsatkichlar Grafigi -->
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <h3 class="card-title">Resurslar Tarixi (Jonli)</h3>
+        <p class="card-subtitle">CPU va RAM ishlatilishining dinamik o'zgarishi</p>
+      </div>
+      <div style="display: flex; gap: 14px; font-size: 0.8rem;">
+        <span style="display: flex; align-items: center; gap: 5px;">
+          <span style="width: 10px; height: 10px; border-radius: 50%; background: #6D7CFF; display: inline-block;"></span>
+          CPU
+        </span>
+        <span style="display: flex; align-items: center; gap: 5px;">
+          <span style="width: 10px; height: 10px; border-radius: 50%; background: #22D3EE; display: inline-block;"></span>
+          RAM
+        </span>
+      </div>
+    </div>
+    <div class="chart-container">
+      <canvas id="telemetryChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Tizim Holati va Tavsiyalar Paneli -->
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <h3 class="card-title">Tizim Tahlili va Xulosa</h3>
+        <p class="card-subtitle" id="systemStatusDesc">Lokal kompyuter ko'rsatkichlari tahlili</p>
+      </div>
+      <a href="/diagnostics" class="btn btn-sm btn-secondary">Batafsil tekshirish</a>
+    </div>
+    
+    <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 8px;">
+      <div class="finding-item" style="margin-bottom: 0;">
+        <div class="finding-icon-wrap" style="background: rgba(109, 124, 255, 0.1); color: var(--accent-primary);">
+          💡
+        </div>
+        <div class="finding-content">
+          <div class="finding-title">Avtomatik O'zbekcha Diagnostika</div>
+          <div class="finding-detail">
+            LabPulse UZ kompyuteringiz holatini doimiy kuzatib, resurslar chegaradan oshganda yoki tarmoq to'xtaganda sizga oddiy o'zbek tilida tushuntiradi.
+          </div>
+          <div class="finding-recommendation">
+            To'liq apparat va tarmoq diagnostikasini boshlash uchun <strong>Tezkor tekshiruv</strong> tugmasini bosing.
+          </div>
+        </div>
+      </div>
+
+      <div style="padding: 12px; background: var(--bg-card-subtle); border-radius: 10px; border: 1px solid var(--border-color); font-size: 0.85rem;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+          <span style="color: var(--text-secondary);">Yangilanish oralig'i:</span>
+          <strong>{{ settings.refresh_interval }} soniya</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span style="color: var(--text-secondary);">CPU / RAM kritik chegara:</span>
+          <strong>{{ settings.thresholds.cpu_critical }}% / {{ settings.thresholds.ram_critical }}%</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/dashboard.js"></script>
+{% endblock %}

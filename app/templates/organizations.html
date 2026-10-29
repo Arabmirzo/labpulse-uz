@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card" style="margin-bottom: 24px;">
+  <div class="card-header" style="margin-bottom: 0;">
+    <div>
+      <h2 class="card-title">Mijoz Kompaniyalar va Tashkilotlar (B2B SaaS)</h2>
+      <p class="card-subtitle">
+        Har bir kompaniya uchun alohida API Kalit yaratish, kompyuterlar ulanishini nazorat qilish va boshqarish.
+      </p>
+    </div>
+    <button class="btn btn-primary" onclick="openAddOrgModal()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="12" y1="5" x2="12" y2="19"></line>
+        <line x1="5" y1="12" x2="19" y2="12"></line>
+      </svg>
+      Yangi Kompaniya Qo'shish
+    </button>
+  </div>
+</div>
+
+<!-- Kompaniyalar Jadvali -->
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title">Faol Tashkilotlar Ro'yxati ({{ organizations | length }})</h3>
+  </div>
+
+  <div class="table-container">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Kompaniya Nomi</th>
+          <th>Tashkilot API Kaliti</th>
+          <th>Ulangan Kompyuterlar</th>
+          <th>Tarif</th>
+          <th>Holati</th>
+          <th>Amallar</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for org in organizations %}
+        <tr>
+          <td>
+            <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-primary);">{{ org.name }}</div>
+            <div style="font-size: 0.75rem; color: var(--text-secondary);">ID: {{ org.id }} • {{ org.contact_email | default('Email yo\'q') }}</div>
+          </td>
+          <td>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <code style="background: var(--bg-card-subtle); padding: 4px 8px; border-radius: 6px; font-family: monospace; border: 1px solid var(--border-color); color: var(--accent-secondary);">
+                {{ org.api_key }}
+              </code>
+              <button class="btn btn-sm btn-secondary" onclick="copyToClipboard('{{ org.api_key }}')" title="Kalitdan nusxa olish">
+                Nusxa
+              </button>
+            </div>
+          </td>
+          <td>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span class="badge badge-success">{{ org.online_devices }} ta Online</span>
+              {% if org.offline_devices > 0 %}
+              <span class="badge badge-critical">{{ org.offline_devices }} ta Offline</span>
+              {% endif %}
+            </div>
+          </td>
+          <td>
+            <span class="badge badge-info">{{ org.plan }}</span>
+          </td>
+          <td>
+            <span class="badge badge-success">{{ org.status }}</span>
+          </td>
+          <td>
+            <div style="display: flex; gap: 8px;">
+              <a href="/devices?org_id={{ org.id }}" class="btn btn-sm btn-primary">
+                Kompyuterlari &rarr;
+              </a>
+              {% if org.id != 'org_demo' %}
+              <button class="btn btn-sm btn-danger" onclick="deleteOrg('{{ org.id }}')">
+                O'chirish
+              </button>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Agentni O'rnatish Tezkor Yo'riqnomasi -->
+<div class="card" style="margin-top: 24px; border-left: 4px solid var(--accent-primary);">
+  <h3 class="card-title" style="margin-bottom: 8px;">🚀 Yangi Kompyuterni Kompaniyaga Qanday Ulanadi?</h3>
+  <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 14px;">
+    Mijozingizning istalgan Windows kompyuteriga borib, quyidagi amallarni bajarasiz:
+  </p>
+  <div style="background: var(--bg-card-subtle); padding: 14px; border-radius: 8px; border: 1px solid var(--border-color); font-family: monospace; font-size: 0.85rem; color: var(--text-primary); margin-bottom: 10px;">
+    1. Loyihadagi <strong>agent</strong> papkasini kompyuterga tashlang.<br>
+    2. <strong>install_agent.bat</strong> faylini bosing va yuqoridagi <strong>API Kalit</strong>ni kiriting.<br>
+    3. Bo'ldi! Kompyuter avtomatik ravishda ushbu admin panelingizda jonli ko'rinadi.
+  </div>
+</div>
+
+<!-- Modal: Yangi Kompaniya Qo'shish -->
+<div id="addOrgModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center;">
+  <div class="card" style="width: 100%; max-width: 480px; margin: 20px;">
+    <div class="card-header">
+      <h3 class="card-title">Yangi Tashkilot (Kompaniya) Qo'shish</h3>
+      <button class="btn btn-sm btn-secondary" onclick="closeAddOrgModal()">✕</button>
+    </div>
+
+    <form onsubmit="submitNewOrg(event)">
+      <div style="margin-bottom: 14px;">
+        <label style="display: block; font-size: 0.85rem; margin-bottom: 6px;">Kompaniya / O'quv markaz nomi:</label>
+        <input type="text" id="newOrgName" required placeholder="Masalan: Najot Ta'lim — Chilonzor"
+               style="width: 100%; padding: 10px; border-radius: 8px; background: var(--bg-card-subtle); border: 1px solid var(--border-color); color: var(--text-primary);">
+      </div>
+
+      <div style="margin-bottom: 14px;">
+        <label style="display: block; font-size: 0.85rem; margin-bottom: 6px;">Mas'ul shaxs emaili (ixtiyoriy):</label>
+        <input type="email" id="newOrgEmail" placeholder="admin@tashkilot.uz"
+               style="width: 100%; padding: 10px; border-radius: 8px; background: var(--bg-card-subtle); border: 1px solid var(--border-color); color: var(--text-primary);">
+      </div>
+
+      <div style="margin-bottom: 20px;">
+        <label style="display: block; font-size: 0.85rem; margin-bottom: 6px;">Tarif rejasi:</label>
+        <select id="newOrgPlan" style="width: 100%; padding: 10px; border-radius: 8px; background: var(--bg-card-subtle); border: 1px solid var(--border-color); color: var(--text-primary);">
+          <option value="Standard">Standard (20 ta kompyutergacha)</option>
+          <option value="Pro">Pro (50 ta kompyutergacha)</option>
+          <option value="Enterprise">Enterprise (Cheksiz)</option>
+        </select>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 10px;">
+        <button type="button" class="btn btn-secondary" onclick="closeAddOrgModal()">Bekor qilish</button>
+        <button type="submit" class="btn btn-primary">Kompaniyani Saqlash</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function openAddOrgModal() {
+  document.getElementById("addOrgModal").style.display = "flex";
+}
+function closeAddOrgModal() {
+  document.getElementById("addOrgModal").style.display = "none";
+}
+
+async function submitNewOrg(e) {
+  e.preventDefault();
+  const name = document.getElementById("newOrgName").value.trim();
+  const email = document.getElementById("newOrgEmail").value.trim();
+  const plan = document.getElementById("newOrgPlan").value;
+
+  try {
+    const res = await fetch("/api/v1/organizations", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, contact_email: email, plan })
+    });
+    if (!res.ok) throw new Error("Saqlashda xatolik");
+    showToast("Kompaniya muvaffaqiyatli qo'shildi!", "success");
+    setTimeout(() => window.location.reload(), 700);
+  } catch (err) {
+    showToast(err.message, "critical");
+  }
+}
+
+async function deleteOrg(orgId) {
+  if (!confirm("Rostdan ham ushbu kompaniyani va unga ulangan kompyuterlarni o'chirmoqchimisiz?")) return;
+  try {
+    const res = await fetch(`/api/v1/organizations/${orgId}`, { method: "DELETE" });
+    if (!res.ok) throw new Error("O'chirishda xatolik");
+    showToast("Kompaniya o'chirildi", "success");
+    setTimeout(() => window.location.reload(), 600);
+  } catch (err) {
+    showToast(err.message, "critical");
+  }
+}
+
+function copyToClipboard(text) {
+  navigator.clipboard.writeText(text).then(() => {
+    showToast("API Kalitdan nusxa olindi!", "success");
+  });
+}
+</script>
+{% endblock %}

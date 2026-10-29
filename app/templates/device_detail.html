@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card" style="margin-bottom: 24px;">
+  <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
+    <div style="display: flex; align-items: center; gap: 14px;">
+      <a href="/devices" class="btn btn-secondary btn-sm">&larr; Orqaga</a>
+      <div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <h2 style="font-size: 1.3rem; font-weight: 700;">{{ device.hostname }}</h2>
+          <span class="badge {{ device.status_class }}">
+            <span class="status-dot" style="background-color: {% if device.is_online %}var(--status-success){% else %}var(--status-critical){% endif %};"></span>
+            {{ device.status_text }}
+          </span>
+        </div>
+        <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 2px;">
+          Tashkilot: <strong>{{ org.name if org else 'Noma\'lum' }}</strong> • IP: <code>{{ device.ip_address }}</code> • Tizim: <strong>{{ device.platform }}</strong>
+        </p>
+      </div>
+    </div>
+
+    <div>
+      <span style="font-size: 0.8rem; color: var(--text-secondary);">Oxirgi signal:</span>
+      <strong>{{ device.last_seen_formatted }}</strong>
+    </div>
+  </div>
+</div>
+
+<!-- 3 ta asosiy metrika -->
+<div class="grid-3">
+  <!-- CPU -->
+  <div class="card metric-card">
+    <div class="metric-top">
+      <span class="metric-label">CPU Yuklanishi</span>
+      <div class="metric-icon-wrap" style="color: var(--accent-primary);">⚡</div>
+    </div>
+    <div class="metric-value-wrap">
+      <span class="metric-value">{{ device.cpu_percent }}</span>
+      <span class="metric-unit">%</span>
+    </div>
+    <div class="progress-bar-bg">
+      <div class="progress-bar-fill {% if device.cpu_percent >= 90 %}critical{% elif device.cpu_percent >= 70 %}warning{% else %}success{% endif %}" style="width: {{ device.cpu_percent }}%;"></div>
+    </div>
+  </div>
+
+  <!-- RAM -->
+  <div class="card metric-card">
+    <div class="metric-top">
+      <span class="metric-label">Operativ Xotira (RAM)</span>
+      <div class="metric-icon-wrap" style="color: var(--accent-secondary);">💾</div>
+    </div>
+    <div class="metric-value-wrap">
+      <span class="metric-value">{{ device.memory.used_percent | default(0) }}</span>
+      <span class="metric-unit">%</span>
+    </div>
+    <div class="progress-bar-bg">
+      <div class="progress-bar-fill warning" style="width: {{ device.memory.used_percent | default(0) }}%;"></div>
+    </div>
+  </div>
+
+  <!-- Disk -->
+  <div class="card metric-card">
+    <div class="metric-top">
+      <span class="metric-label">Asosiy Disk</span>
+      <div class="metric-icon-wrap" style="color: var(--status-warning);">💿</div>
+    </div>
+    <div class="metric-value-wrap">
+      <span class="metric-value">{{ device.disk.used_percent | default(0) }}</span>
+      <span class="metric-unit">% band</span>
+    </div>
+    <div class="progress-bar-bg">
+      <div class="progress-bar-fill" style="width: {{ device.disk.used_percent | default(0) }}%;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Tizim O'zbekcha Tashxisi -->
+<div class="card" style="margin-top: 24px;">
+  <div class="card-header">
+    <h3 class="card-title">Ushbu Kompyuter Uchun O'zbekcha Tavsiyalar</h3>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 12px;">
+    {% if device.cpu_percent >= 90 %}
+    <div class="finding-item">
+      <div class="finding-icon-wrap">🚨</div>
+      <div class="finding-content">
+        <div class="finding-title" style="color: var(--status-critical);">CPU yuklanishi o'ta yuqori ({{ device.cpu_percent }}%)</div>
+        <div class="finding-detail">Kompyuter protsessori haddan tashqari zo'riqishda ishlamoqda.</div>
+        <div class="finding-recommendation">Foydalanuvchi bilan bog'lanib, og'ir jarayonlarni tekshiring.</div>
+      </div>
+    </div>
+    {% endif %}
+
+    {% if device.memory.used_percent and device.memory.used_percent >= 90 %}
+    <div class="finding-item">
+      <div class="finding-icon-wrap">🚨</div>
+      <div class="finding-content">
+        <div class="finding-title" style="color: var(--status-critical);">Operativ xotira (RAM) deyarli to'lgan ({{ device.memory.used_percent }}%)</div>
+        <div class="finding-detail">Kompyuter yangi ilovalarni ochishda qotishi mumkin.</div>
+        <div class="finding-recommendation">Ortiqcha dasturlar va brauzer oynalarini yopish tavsiya etiladi.</div>
+      </div>
+    </div>
+    {% endif %}
+
+    {% if not device.is_online %}
+    <div class="finding-item">
+      <div class="finding-icon-wrap">⚠️</div>
+      <div class="finding-content">
+        <div class="finding-title" style="color: var(--status-critical);">Kompyuter hozirda tarmoqdan uzilgan (Offline)</div>
+        <div class="finding-detail">So'nggi 35 soniya ichida kompyuterdan signal kelmadi.</div>
+        <div class="finding-recommendation">Kompyuter elektr tarmog'iga yoki internetga ulanganligini tekshiring.</div>
+      </div>
+    </div>
+    {% else %}
+    <div class="finding-item">
+      <div class="finding-icon-wrap">✅</div>
+      <div class="finding-content">
+        <div class="finding-title" style="color: var(--status-success);">Kompyuter barqaror ishlamoqda</div>
+        <div class="finding-detail">Agent uzluksiz telemetriya yubormoqda, tarmoq ulanishi faol.</div>
+        <div class="finding-recommendation">Hech qanday qo'shimcha chora talab etilmaydi.</div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

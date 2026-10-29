@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="uz" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ page_title | default("Monitoring") }} — LabPulse UZ</title>
+  <link rel="stylesheet" href="/static/css/app.css">
+  <link rel="icon" type="image/svg+xml" href="/static/assets/logo.svg">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Chap Yon Menyu (Sidebar) -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <img src="/static/assets/logo.svg" alt="LabPulse UZ Logo" width="34" height="34">
+        <div>
+          <div class="brand-title">LabPulse UZ</div>
+          <span class="brand-badge">SaaS Cloud v1.1</span>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <a href="/" class="nav-link {% if active_page == 'dashboard' %}active{% endif %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <rect x="3" y="3" width="7" height="9" rx="1"></rect>
+            <rect x="14" y="3" width="7" height="5" rx="1"></rect>
+            <rect x="14" y="12" width="7" height="9" rx="1"></rect>
+            <rect x="3" y="16" width="7" height="5" rx="1"></rect>
+          </svg>
+          Umumiy ko'rinish
+        </a>
+
+        <a href="/devices" class="nav-link {% if active_page == 'devices' %}active{% endif %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <rect x="2" y="3" width="20" height="14" rx="2"></rect>
+            <line x1="8" y1="21" x2="16" y2="21"></line>
+            <line x1="12" y1="17" x2="12" y2="21"></line>
+          </svg>
+          Kompyuterlar
+        </a>
+
+        <a href="/admin/organizations" class="nav-link {% if active_page == 'organizations' %}active{% endif %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M3 21h18"></path>
+            <path d="M5 21V7l8-4v18"></path>
+            <path d="M19 21V11l-6-3"></path>
+            <line x1="9" y1="9" x2="9" y2="9.01"></line>
+            <line x1="9" y1="13" x2="9" y2="13.01"></line>
+            <line x1="9" y1="17" x2="9" y2="17.01"></line>
+          </svg>
+          Tashkilotlar (SaaS)
+        </a>
+
+        <a href="/diagnostics" class="nav-link {% if active_page == 'diagnostics' %}active{% endif %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 6 12 12 16 14"></polyline>
+          </svg>
+          Diagnostika
+        </a>
+
+        <a href="/alerts" class="nav-link {% if active_page == 'alerts' %}active{% endif %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+          </svg>
+          Ogohlantirishlar
+        </a>
+
+        <a href="/reports" class="nav-link {% if active_page == 'reports' %}active{% endif %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+            <polyline points="10 9 9 9 8 9"></polyline>
+          </svg>
+          Hisobotlar
+        </a>
+
+        <a href="/settings" class="nav-link {% if active_page == 'settings' %}active{% endif %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+          Sozlamalar
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="system-status-indicator">
+          <div class="status-dot"></div>
+          <span>Bulut Markazi Faol</span>
+        </div>
+        <div style="font-size: 0.75rem; color: var(--text-muted);">
+          LabPulse UZ Hub
+        </div>
+      </div>
+    </aside>
+
+    <!-- Asosiy Tarkib -->
+    <div class="main-wrapper">
+      <header class="top-header">
+        <div class="header-left">
+          <button class="mobile-menu-btn" onclick="toggleMobileMenu()" aria-label="Menyu">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="3" y1="12" x2="21" y2="12"></line>
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+          </button>
+          <h1 class="page-title">{{ page_title }}</h1>
+        </div>
+
+        <div class="header-right">
+          <div class="last-update-text">
+            Oxirgi yangilanish: <span id="lastUpdatedTime">--:--:--</span>
+          </div>
+          <button class="theme-toggle-btn" onclick="toggleTheme()" title="Temani almashtirish">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="5"></circle>
+              <line x1="12" y1="1" x2="12" y2="3"></line>
+              <line x1="12" y1="21" x2="12" y2="23"></line>
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+              <line x1="1" y1="12" x2="3" y2="12"></line>
+              <line x1="21" y1="12" x2="23" y2="12"></line>
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+            </svg>
+            <span id="themeLabel">Tema</span>
+          </button>
+        </div>
+      </header>
+
+      <main class="page-content">
+        {% block content %}{% endblock %}
+      </main>
+    </div>
+  </div>
+
+  <div class="toast-container"></div>
+  <script src="/static/js/app.js"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

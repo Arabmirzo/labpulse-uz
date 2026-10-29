@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card" style="margin-bottom: 24px;">
+  <div class="card-header">
+    <div>
+      <h2 class="card-title">Avtomatik Tizim va Tarmoq Diagnostikasi</h2>
+      <p class="card-subtitle">
+        CPU, RAM, disk xotirasi va tarmoq ulanishlarini to'liq tekshirish va o'zbek tilidagi tavsiyalar olish.
+      </p>
+    </div>
+  </div>
+
+  <div style="display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap;">
+    <div style="flex: 1; min-width: 240px;">
+      <label style="display: block; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 6px;">
+        Tekshirish uchun manzil (IP yoki Hostname):
+      </label>
+      <input type="text" id="diagnosticTargetInput" value="{{ settings.diagnostic_target }}" 
+             style="width: 100%; padding: 10px 14px; border-radius: var(--radius-btn); background: var(--bg-card-subtle); border: 1px solid var(--border-color); color: var(--text-primary);"
+             placeholder="8.8.8.8 yoki google.com">
+    </div>
+    <button id="runDiagnosticsBtn" class="btn btn-primary" onclick="startFullDiagnostics()" style="padding: 10px 20px;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polygon points="5 3 19 12 5 21 5 3"></polygon>
+      </svg>
+      To'liq tekshiruvni boshlash
+    </button>
+  </div>
+
+  <!-- Tekshiruv holati / Progress -->
+  <div id="diagnosticProgress" style="display: none; margin-top: 20px; padding: 16px; background: var(--bg-card-subtle); border-radius: 12px; border: 1px dashed var(--accent-primary);">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div class="status-dot" style="background-color: var(--accent-primary); animation: pulse 1s infinite;"></div>
+      <div>
+        <strong style="color: var(--text-primary);">Diagnostika jarayoni davom etmoqda...</strong>
+        <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 2px;">
+          CPU, RAM va disk o'lchovlari olinmoqda; DNS yechimi va Ping sinovi bajarilmoqda.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Natija Xulosasi Kartasi (yashirin, tekshiruvdan so'ng chiqadi) -->
+<div id="summaryStatusCard" class="card" style="display: none; margin-bottom: 24px;">
+  <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+    <div>
+      <span style="font-size: 0.85rem; color: var(--text-secondary);">Umumiy Tizim Xulosasi</span>
+      <h3 style="font-size: 1.25rem; font-weight: 700; margin-top: 4px;" id="overallStatusDesc">Tekshiruv yakunlandi</h3>
+    </div>
+    <span id="overallStatusBadge" class="badge badge-success" style="font-size: 0.9rem; padding: 6px 12px;">
+      Barqaror
+    </span>
+  </div>
+</div>
+
+<!-- Natijalar ro'yxati -->
+<div id="diagnosticResults">
+  <div class="card" style="text-align: center; padding: 40px 20px;">
+    <div style="font-size: 2.5rem; margin-bottom: 12px;">🔍</div>
+    <h3 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 6px;">Diagnostika hali o'tkazilmadi</h3>
+    <p style="color: var(--text-secondary); max-width: 460px; margin: 0 auto 18px auto; font-size: 0.9rem;">
+      Kompyuter quvvati, xotira, disk holati va tarmoq ulanishini tahlil qilish uchun yuqoridagi tugmani bosing.
+    </p>
+    <button class="btn btn-secondary" onclick="startFullDiagnostics()">
+      Hozir tekshirish
+    </button>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/diagnostics.js"></script>
+{% endblock %}

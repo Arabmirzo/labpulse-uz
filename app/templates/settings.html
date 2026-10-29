@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card" style="margin-bottom: 24px;">
+  <div class="card-header" style="margin-bottom: 0;">
+    <div>
+      <h2 class="card-title">Tizim va Bulut (Firebase) Sozlamalari</h2>
+      <p class="card-subtitle">
+        Monitoring yangilanish tezligi, tema, Firebase bulut bazasi va ogohlantirish chegaralarini sozlash.
+      </p>
+    </div>
+  </div>
+</div>
+
+<form id="settingsForm" onsubmit="saveSettings(event)">
+  <div class="grid-2">
+    <!-- Asosiy Interfeys Sozlamalari -->
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">Interfeys va Yangilanish</h3>
+      </div>
+
+      <div style="margin-bottom: 18px;">
+        <label style="display: block; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 6px;">
+          Tashqi Ko'rinish (Tema):
+        </label>
+        <select id="settingTheme" style="width: 100%; padding: 10px; border-radius: var(--radius-btn); background: var(--bg-card-subtle); border: 1px solid var(--border-color); color: var(--text-primary);">
+          <option value="dark" {% if settings.theme == 'dark' %}selected{% endif %}>To'q tema (Dark - Standart)</option>
+          <option value="light" {% if settings.theme == 'light' %}selected{% endif %}>Yorug' tema (Light)</option>
+        </select>
+      </div>
+
+      <div style="margin-bottom: 18px;">
+        <label style="display: block; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 6px;">
+          Metrikalar Yangilanish Oralig'i:
+        </label>
+        <select id="settingRefresh" style="width: 100%; padding: 10px; border-radius: var(--radius-btn); background: var(--bg-card-subtle); border: 1px solid var(--border-color); color: var(--text-primary);">
+          <option value="3" {% if settings.refresh_interval == 3 %}selected{% endif %}>3 soniya (Juda tez)</option>
+          <option value="5" {% if settings.refresh_interval == 5 %}selected{% endif %}>5 soniya (Tavsiya etiladi)</option>
+          <option value="10" {% if settings.refresh_interval == 10 %}selected{% endif %}>10 soniya</option>
+          <option value="30" {% if settings.refresh_interval == 30 %}selected{% endif %}>30 soniya (Tejamkor)</option>
+        </select>
+      </div>
+
+      <div>
+        <label style="display: block; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 6px;">
+          Standart Diagnostika Manzili (Ping / DNS):
+        </label>
+        <input type="text" id="settingTarget" value="{{ settings.diagnostic_target }}" required
+               style="width: 100%; padding: 10px; border-radius: var(--radius-btn); background: var(--bg-card-subtle); border: 1px solid var(--border-color); color: var(--text-primary);">
+      </div>
+    </div>
+
+    <!-- Firebase Bulut Integratsiyasi -->
+    <div class="card" style="border-left: 3px solid var(--accent-secondary);">
+      <div class="card-header">
+        <h3 class="card-title">🔥 Firebase Bulut Integratsiyasi</h3>
+      </div>
+      <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 14px;">
+        Barcha kompyuterlar signallarini to'g'ridan-to'g'ri Firebase Realtime Database'ga ham sinxronizatsiya qilish.
+      </p>
+
+      <div style="margin-bottom: 16px;">
+        <label style="display: block; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 6px;">
+          Firebase Database URL:
+        </label>
+        <input type="text" id="settingFbUrl" value="{{ settings.firebase_db_url }}" placeholder="https://loyihangiz-default-rtdb.firebaseio.com"
+               style="width: 100%; padding: 10px; border-radius: var(--radius-btn); background: var(--bg-card-subtle); border: 1px solid var(--border-color); color: var(--text-primary);">
+        <span style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 4px; display: block;">
+          Firebase konsolidan olingan Realtime Database havolasi.
+        </span>
+      </div>
+
+      <div>
+        <label style="display: block; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 6px;">
+          Firebase Auth Secret / Token (ixtiyoriy):
+        </label>
+        <input type="password" id="settingFbSecret" value="{{ settings.firebase_secret }}" placeholder="Kiritilmasa ochiq qoidalar ishlatiladi"
+               style="width: 100%; padding: 10px; border-radius: var(--radius-btn); background: var(--bg-card-subtle); border: 1px solid var(--border-color); color: var(--text-primary);">
+      </div>
+    </div>
+  </div>
+
+  <!-- Ogohlantirish Chegaralari (Thresholds) -->
+  <div class="card" style="margin-top: 20px;">
+    <div class="card-header">
+      <h3 class="card-title">Ogohlantirish Chegaralari (Thresholds)</h3>
+    </div>
+
+    <div class="grid-3" style="margin-bottom: 0;">
+      <div>
+        <label style="display: block; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 6px;">
+          CPU Kritik (%):
+        </label>
+        <input type="number" id="thCpuCrit" min="50" max="99" value="{{ settings.thresholds.cpu_critical }}" required
+               style="width: 100%; padding: 10px; border-radius: var(--radius-btn); background: var(--bg-card-subtle); border: 1px solid var(--border-color); color: var(--text-primary);">
+      </div>
+
+      <div>
+        <label style="display: block; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 6px;">
+          RAM Kritik (%):
+        </label>
+        <input type="number" id="thRamCrit" min="50" max="99" value="{{ settings.thresholds.ram_critical }}" required
+               style="width: 100%; padding: 10px; border-radius: var(--radius-btn); background: var(--bg-card-subtle); border: 1px solid var(--border-color); color: var(--text-primary);">
+      </div>
+
+      <div>
+        <label style="display: block; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 6px;">
+          Disk Bo'sh Joy Kritik (%):
+        </label>
+        <input type="number" id="thDiskCrit" min="1" max="30" value="{{ settings.thresholds.disk_critical }}" required
+               style="width: 100%; padding: 10px; border-radius: var(--radius-btn); background: var(--bg-card-subtle); border: 1px solid var(--border-color); color: var(--text-primary);">
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top: 20px; display: flex; justify-content: flex-end; gap: 12px;">
+    <button type="submit" class="btn btn-primary" id="saveSettingsBtn" style="padding: 10px 24px;">
+      Sozlamalarni saqlash
+    </button>
+  </div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function saveSettings(e) {
+  e.preventDefault();
+  const btn = document.getElementById("saveSettingsBtn");
+  btn.disabled = true;
+  btn.textContent = "Saqlanmoqda...";
+
+  const theme = document.getElementById("settingTheme").value;
+  const refresh = parseInt(document.getElementById("settingRefresh").value, 10);
+  const target = document.getElementById("settingTarget").value.trim();
+  const fbUrl = document.getElementById("settingFbUrl").value.trim();
+  const fbSecret = document.getElementById("settingFbSecret").value.trim();
+
+  const payload = {
+    theme: theme,
+    refresh_interval: refresh,
+    diagnostic_target: target,
+    firebase_db_url: fbUrl,
+    firebase_secret: fbSecret,
+    thresholds: {
+      cpu_critical: parseInt(document.getElementById("thCpuCrit").value, 10),
+      ram_critical: parseInt(document.getElementById("thRamCrit").value, 10),
+      disk_critical: parseInt(document.getElementById("thDiskCrit").value, 10),
+      ram_warning: 80,
+      disk_warning: 20
+    }
+  };
+
+  try {
+    const res = await fetch("/api/settings", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.detail || "Saqlashda xatolik yuz berdi");
+    }
+
+    document.documentElement.setAttribute("data-theme", theme);
+    localStorage.setItem("labpulse_theme", theme);
+
+    showToast("Sozlamalar va Firebase sozlandi!", "success");
+  } catch (err) {
+    showToast(err.message, "critical");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Sozlamalarni saqlash";
+  }
+}
+</script>
+{% endblock %}

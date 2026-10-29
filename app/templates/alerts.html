@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card" style="margin-bottom: 24px;">
+  <div class="card-header" style="margin-bottom: 0;">
+    <div>
+      <h2 class="card-title">Tizim Ogohlantirishlari Jurnali</h2>
+      <p class="card-subtitle">
+        Resurslar me'yoridan oshganda yoki tarmoq xatolari yuz berganda avtomatik qayd etilgan hodisalar.
+      </p>
+    </div>
+    <div style="font-size: 0.8rem; color: var(--text-secondary);">
+      Deduplikatsiya & Cooldown: <strong>{{ settings.alert_cooldown_seconds }} soniya</strong>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title">Ogohlantirishlar Ro'yxati ({{ alerts | length }})</h3>
+  </div>
+
+  {% if alerts | length == 0 %}
+  <div style="text-align: center; padding: 40px 20px;">
+    <div style="font-size: 2.5rem; margin-bottom: 12px;">🎉</div>
+    <h3 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 6px;">Hech qanday ogohlantirish yo'q</h3>
+    <p style="color: var(--text-secondary); font-size: 0.9rem;">
+      Tizim barqaror holatda ishlamoqda. Barcha ko'rsatkichlar ruxsat etilgan chegarada.
+    </p>
+  </div>
+  {% else %}
+  <div class="table-container">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Daraja</th>
+          <th>Sarlavha</th>
+          <th>Tafsilot va Xavfsiz Tavsiya</th>
+          <th>Vaqt</th>
+          <th>Holat</th>
+          <th>Amal</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in alerts %}
+        <tr id="alert-row-{{ a.id }}">
+          <td>
+            {% if a.level == 'Muhim' %}
+            <span class="badge badge-critical">Muhim</span>
+            {% elif a.level == 'Diqqat' %}
+            <span class="badge badge-warning">Diqqat</span>
+            {% else %}
+            <span class="badge badge-info">{{ a.level }}</span>
+            {% endif %}
+          </td>
+          <td><strong>{{ a.title }}</strong></td>
+          <td style="max-width: 400px;">
+            <div style="font-size: 0.85rem; margin-bottom: 4px;">{{ a.message }}</div>
+            <div style="font-size: 0.8rem; color: var(--text-secondary); background: var(--bg-card-subtle); padding: 4px 8px; border-radius: 6px; border-left: 2px solid var(--accent-primary);">
+              {{ a.recommendation }}
+            </div>
+          </td>
+          <td style="white-space: nowrap; font-size: 0.8rem; color: var(--text-secondary);">
+            {{ a.timestamp }}
+          </td>
+          <td>
+            {% if a.acknowledged %}
+            <span class="badge badge-success" id="badge-status-{{ a.id }}">Ko'rib chiqildi</span>
+            {% else %}
+            <span class="badge badge-warning" id="badge-status-{{ a.id }}">Yangi</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if not a.acknowledged %}
+            <button class="btn btn-sm btn-secondary" id="btn-ack-{{ a.id }}" onclick="acknowledgeAlert('{{ a.id }}')">
+              Ko'rib chiqildi
+            </button>
+            {% else %}
+            <span style="color: var(--text-muted); font-size: 0.8rem;">—</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function acknowledgeAlert(alertId) {
+  try {
+    const res = await fetch(`/api/alerts/${alertId}/acknowledge`, { method: "POST" });
+    if (!res.ok) throw new Error("Server xatosi");
+    
+    const badge = document.getElementById(`badge-status-${alertId}`);
+    if (badge) {
+      badge.className = "badge badge-success";
+      badge.textContent = "Ko'rib chiqildi";
+    }
+    const btn = document.getElementById(`btn-ack-${alertId}`);
+    if (btn) {
+      btn.outerHTML = '<span style="color: var(--text-muted); font-size: 0.8rem;">—</span>';
+    }
+    showToast("Ogohlantirish tasdiqlandi", "success");
+  } catch (err) {
+    showToast("Ogohlantirishni belgilashda xatolik yuz berdi", "critical");
+  }
+}
+</script>
+{% endblock %}
