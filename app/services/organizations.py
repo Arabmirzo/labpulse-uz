@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 DB_PATH = Path(__file__).parent.parent / "labpulse.db"
+DEVICE_OFFLINE_AFTER_SECONDS = 35
 
 
 def get_db():
@@ -52,6 +53,27 @@ def init_db():
             CREATE TABLE IF NOT EXISTS system_config (
                 key TEXT PRIMARY KEY,
                 value TEXT NOT NULL
+            );
+        """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS device_status (
+                device_id TEXT PRIMARY KEY,
+                is_online INTEGER NOT NULL,
+                updated_at REAL NOT NULL
+            );
+        """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS device_status_events (
+                id TEXT PRIMARY KEY,
+                org_id TEXT NOT NULL,
+                device_id TEXT NOT NULL,
+                key TEXT NOT NULL,
+                level TEXT NOT NULL,
+                title TEXT NOT NULL,
+                message TEXT NOT NULL,
+                recommendation TEXT NOT NULL,
+                timestamp TEXT NOT NULL,
+                acknowledged INTEGER NOT NULL DEFAULT 0
             );
         """)
 
@@ -137,6 +159,22 @@ def create_organization(name: str, contact_email: str = "", plan: str = "Standar
 
 def delete_organization(org_id: str) -> bool:
     with get_db() as conn:
+        device_ids = [
+            row["id"]
+            for row in conn.execute(
+                "SELECT id FROM remote_devices WHERE org_id = ?", (org_id,)
+            ).fetchall()
+        ]
+        if device_ids:
+            placeholders = ",".join("?" for _ in device_ids)
+            conn.execute(
+                f"DELETE FROM device_status_events WHERE device_id IN ({placeholders})",
+                device_ids
+            )
+            conn.execute(
+                f"DELETE FROM device_status WHERE device_id IN ({placeholders})",
+                device_ids
+            )
         conn.execute("DELETE FROM remote_devices WHERE org_id = ?", (org_id,))
         cur = conn.execute("DELETE FROM organizations WHERE id = ?", (org_id,))
         conn.commit()
@@ -233,6 +271,8 @@ def get_devices_by_org(org_id: Optional[str] = None) -> List[Dict[str, Any]]:
 
 def delete_device(device_id: str) -> bool:
     with get_db() as conn:
+        conn.execute("DELETE FROM device_status_events WHERE device_id = ?", (device_id,))
+        conn.execute("DELETE FROM device_status WHERE device_id = ?", (device_id,))
         cur = conn.execute("DELETE FROM remote_devices WHERE id = ?", (device_id,))
         conn.commit()
         return cur.rowcount > 0
@@ -283,7 +323,7 @@ def _parse_device_row(d: Dict[str, Any]) -> Dict[str, Any]:
     last_seen = d.get("last_seen", 0)
     # 35 soniyadan beri signal kelmasa -> Offline
     diff_sec = now - last_seen
-    is_online = diff_sec <= 35
+    is_online = diff_sec <= DEVICE_OFFLINE_AFTER_SECONDS
 
     memory = {}
     try:

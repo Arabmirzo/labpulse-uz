@@ -1,18 +1,34 @@
 """
 LabPulse UZ — Asosiy FastAPI Ilovasi.
 """
+import asyncio
+import logging
 from pathlib import Path
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
 from app.routers.api import router as api_router
 from app.routers.pages import router as pages_router
+from app.services.device_monitoring import (
+    DEVICE_STATUS_CHECK_INTERVAL_SECONDS,
+    check_device_status_transitions,
+)
 from app.services.system_metrics import collect_metrics
 
 # Yo'llar qat'iy ravishda ushbu fayl manziliga nisbatan aniqlanadi
 BASE_DIR = Path(__file__).resolve().parent
 STATIC_DIR = BASE_DIR / "static"
+logger = logging.getLogger(__name__)
+
+
+async def _monitor_device_statuses() -> None:
+    while True:
+        try:
+            check_device_status_transitions()
+        except Exception:
+            logger.exception("Masofaviy qurilmalar holatini tekshirishda xatolik")
+        await asyncio.sleep(DEVICE_STATUS_CHECK_INTERVAL_SECONDS)
 
 
 @asynccontextmanager
@@ -22,7 +38,13 @@ async def lifespan(app: FastAPI):
         collect_metrics()
     except Exception as exc:
         print(f"[LabPulse UZ] Dastlabki telemetriya yuklanmadi: {exc}")
-    yield
+    monitor_task = asyncio.create_task(_monitor_device_statuses())
+    try:
+        yield
+    finally:
+        monitor_task.cancel()
+        with suppress(asyncio.CancelledError):
+            await monitor_task
 
 
 app = FastAPI(

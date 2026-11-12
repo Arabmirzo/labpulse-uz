@@ -33,6 +33,7 @@ LabPulse UZ monitoring vositalarining (shu jumladan Netdata) umumiy vazifalarida
    - Muhim, Diqqat va Ma’lumot darajalaridagi hodisalar jurnali.
    - Takrorlanuvchi shovqinni oldini oluvchi Cooldown / Debounce mexanizmi.
    - Alertlarni “ko‘rib chiqildi” (acknowledge) deb belgilash.
+   - Masofaviy qurilma 35 soniya telemetriya yubormasa offline ogohlantirishi, qayta ulanganda tiklanish hodisasi SQLite’da saqlanadi.
 5. **Hisobotlar (`/reports`):**
    - Bir tugma orqali to‘liq tizim holati hisobotini shakllantirish.
    - JSON formatida yuklab olish.

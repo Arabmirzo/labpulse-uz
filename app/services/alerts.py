@@ -9,6 +9,10 @@ import time
 import uuid
 from typing import Any, Dict, List, Optional
 from app.config import get_settings
+from app.services.device_monitoring import (
+    acknowledge_device_status_alert,
+    get_device_status_alerts,
+)
 
 # Alertlar xotirada saqlanadi
 _alerts: List[Dict[str, Any]] = []
@@ -148,9 +152,10 @@ def generate_alerts_from_metrics(metrics: Dict[str, Any], network_results: Optio
 
 def get_alerts(only_unacknowledged: bool = False) -> List[Dict[str, Any]]:
     """Mavjud alertlar ro'yxatini qaytarish."""
+    alerts = list(_alerts) + get_device_status_alerts()
     if only_unacknowledged:
-        return [a for a in _alerts if not a.get("acknowledged")]
-    return list(_alerts)
+        alerts = [a for a in alerts if not a.get("acknowledged")]
+    return sorted(alerts, key=lambda alert: alert.get("timestamp", ""), reverse=True)
 
 
 def acknowledge_alert(alert_id: str) -> bool:
@@ -159,7 +164,7 @@ def acknowledge_alert(alert_id: str) -> bool:
         if alert.get("id") == alert_id:
             alert["acknowledged"] = True
             return True
-    return False
+    return acknowledge_device_status_alert(alert_id)
 
 
 def clear_all_alerts() -> None:
